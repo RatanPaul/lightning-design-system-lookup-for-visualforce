@@ -1,0 +1,117 @@
+<apex:page controller="AutoCompleteController" >
+    <apex:slds/>
+    <apex:stylesheet value="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"/>
+    <style>
+        .ui-state-focus {
+            outline: 0;
+            background-color: #f4f6f9;
+            color: #16325c;
+            text-decoration: none;
+        }
+    </style>
+    <apex:form>
+    <div class="slds">
+
+        <p class="slds-text-heading--label slds-m-bottom--small">
+            SLDS JQuery Autocomplete Plugin
+        </p>
+
+        <div class="slds-grid">
+
+            <div class="slds-col slds-size--1-of-2">
+
+                <div class="slds-lookup" data-select="single" data-scope="single" data-typeahead="true">
+
+                    <div class="slds-form-element">
+                        <label class="slds-form-element__label" for="lookup-input">Accounts</label>
+                        <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                            <span class="slds-input__icon" aria-hidden="true">
+                                <i class="fa fa-search"></i>
+                            </span>
+                            <div class="slds-pill__container slds-hide"></div>
+                            <apex:inputHidden id="searchAccountId" value="{!selectedAccountId}" />
+                            <input id="lookup-input" class="slds-input slds-show" type="text" aria-autocomplete="list" role="combobox" aria-expanded="true" aria-activedescendant="" />
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="slds-col slds-size--1-of-2">
+
+            </div>
+
+        </div>
+
+    </div>
+    </apex:form>
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+    <script>$j = jQuery.noConflict();</script>
+    
+    <script>
+        (function( $ ) {
+
+            $.widget( 'slds.autocomplete', $.ui.autocomplete, {
+                _create: function() {
+                    this._super();
+                    this.sldsMenu = $('<div>')
+                                        .addClass('slds-lookup__menu slds-hide')
+                                        .attr('role', 'listbox')
+
+                    this.element.parentsUntil('.slds-lookup').append( this.sldsMenu );
+                    $('.ui-helper-hidden, .ui-helper-hidden-accessible').addClass('slds-hide');
+                },
+                _renderMenu: function( ul, items ) {
+                    var self = this;
+                    ul.addClass('slds-lookup__list').attr('role', 'presentation');
+                    ul.appendTo( this.sldsMenu );
+                    this.sldsMenu.addClass('slds-show').removeClass('slds-hide');
+                    $.each( items, function( index, item ) {
+                        self._renderItemData( ul, item );
+                    });
+                },
+                _renderItem: function( ul, item ) {
+                    return $('<li>')
+                        .addClass('slds-lookup__item')
+                        .append( '<a href="#" role="option">' + item.Name + '</a>' )
+                        .appendTo( ul );
+                },
+                _close: function( event ) {
+                    this._super( event );
+                    this.sldsMenu.addClass('slds-hide').removeClass('slds-show');
+                }
+            });
+
+        })( jQuery );
+
+        $j(function() {
+
+            $j('#lookup-input').autocomplete({
+                source: function(request, response) {
+                    queryTerm = request.term;
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AutoCompleteController.searchAccounts}',
+                        queryTerm, 
+                        function(result, event){
+                           if(event.type == 'exception') {
+                              alert(event.message);
+                            } else {
+                                 response(result);
+                            }
+                        }, 
+                        {escape: true}
+                    );
+               },
+                select: function( event, ui ) {
+                    $j('[id$=lookup-input]').val( ui.item.Name );
+                    $j('[id$=searchAccountId]').val( ui.item.Id );
+                    return false;
+                }
+            })
+        });
+
+    </script>
+
+</apex:page>
